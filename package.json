@@ -1,0 +1,70 @@
+{
+	"name": "@rabbit-company/qrcode",
+	"version": "1.0.0",
+	"description": "A simple and lightweight QR code generator with SVG, data URL and terminal output",
+	"main": "./module/qrcode.js",
+	"types": "./module/qrcode.d.ts",
+	"exports": {
+		".": {
+			"types": "./module/qrcode.d.ts",
+			"default": "./module/qrcode.js"
+		},
+		"./payload": {
+			"types": "./module/payload.d.ts",
+			"default": "./module/payload.js"
+		}
+	},
+	"typesVersions": {
+		"*": {
+			"payload": [
+				"./module/payload.d.ts"
+			]
+		}
+	},
+	"type": "module",
+	"sideEffects": false,
+	"homepage": "https://github.com/Rabbit-Company/QRCode-JS",
+	"funding": "https://rabbit-company.com/donation",
+	"author": "Rabbit Company <info@rabbit-company.com>",
+	"license": "MIT",
+	"private": false,
+	"scripts": {
+		"build": "bun run build.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "bun run typecheck && bun test && bun run build"
+	},
+	"files": [
+		"module/qrcode.js",
+		"module/qrcode.d.ts",
+		"module/payload.js",
+		"module/payload.d.ts"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Rabbit-Company/QRCode-JS.git"
+	},
+	"contributors": [
+		"Rabbit Company <info@rabbit-company.com> (https://github.com/Rabbit-Company)"
+	],
+	"bugs": {
+		"url": "https://github.com/Rabbit-Company/QRCode-JS/issues",
+		"email": "info@rabbit-company.com"
+	},
+	"keywords": [
+		"qrcode",
+		"qr",
+		"qr-code",
+		"barcode",
+		"generator",
+		"svg",
+		"2fa",
+		"totp"
+	],
+	"devDependencies": {
+		"@rabbit-company/logger": "^5.6.1",
+		"@types/bun": "latest",
+		"bun-plugin-dts": "^0.3.0",
+		"typescript": "^5.9.3"
+	}
+}

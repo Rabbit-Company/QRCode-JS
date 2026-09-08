@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>QRCode-JS</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				--bg: #f9fafb;
+				--surface: #ffffff;
+				--text: #111827;
+				--muted: #6b7280;
+				--border: #e5e7eb;
+				--accent: #4f46e5;
+				--warn: #b45309;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--bg: #0d1117;
+					--surface: #161b22;
+					--text: #e6edf3;
+					--muted: #9198a1;
+					--border: #30363d;
+					--accent: #818cf8;
+					--warn: #fbbf24;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				padding: 2rem 1rem 4rem;
+				background: var(--bg);
+				color: var(--text);
+				font:
+					16px/1.6 ui-sans-serif,
+					system-ui,
+					-apple-system,
+					"Segoe UI",
+					Roboto,
+					sans-serif;
+			}
+			main {
+				max-width: 60rem;
+				margin: 0 auto;
+			}
+			h1 {
+				text-align: center;
+				letter-spacing: -0.025em;
+			}
+			p.lede {
+				text-align: center;
+				color: var(--muted);
+				margin-top: -0.5rem;
+			}
+			.panels {
+				display: grid;
+				gap: 2rem;
+				grid-template-columns: 1fr 1fr;
+				align-items: start;
+				margin-top: 2rem;
+			}
+			/* Content and logo stack on the left, the result sits alongside. */
+			.column {
+				display: grid;
+				gap: 2rem;
+				align-content: start;
+			}
+			@media (max-width: 52rem) {
+				.panels {
+					grid-template-columns: 1fr;
+				}
+			}
+			fieldset {
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				background: var(--surface);
+				padding: 1.25rem;
+			}
+			legend {
+				padding: 0 0.5rem;
+				font-weight: 600;
+			}
+			label {
+				display: block;
+				margin-top: 1rem;
+				font-size: 0.9rem;
+				font-weight: 600;
+			}
+			textarea,
+			select,
+			input {
+				width: 100%;
+				margin-top: 0.35rem;
+				padding: 0.55rem 0.7rem;
+				font: inherit;
+				color: var(--text);
+				background: var(--bg);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+			}
+			input[type="color"] {
+				height: 2.6rem;
+				padding: 0.2rem;
+			}
+			input[type="range"] {
+				padding: 0;
+			}
+			textarea {
+				min-height: 7rem;
+				resize: vertical;
+			}
+			button {
+				width: 100%;
+				margin-top: 1rem;
+				padding: 0.55rem 0.7rem;
+				font: inherit;
+				font-weight: 600;
+				color: var(--text);
+				background: var(--bg);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				cursor: pointer;
+			}
+			button:disabled,
+			input:disabled {
+				opacity: 0.45;
+				cursor: default;
+			}
+			input[type="checkbox"] {
+				width: auto;
+				margin-top: 0.5rem;
+			}
+			#payload {
+				margin: 0;
+				padding: 0.6rem 0.7rem;
+				max-height: 9rem;
+				overflow: auto;
+				background: var(--bg);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				color: var(--muted);
+				font:
+					12px/1.5 ui-monospace,
+					SFMono-Regular,
+					Menlo,
+					Consolas,
+					monospace;
+				white-space: pre-wrap;
+				overflow-wrap: anywhere;
+			}
+			#payload:empty::before {
+				content: "-";
+			}
+			.hint {
+				margin: 1rem 0 0;
+				color: var(--muted);
+				font-size: 0.85rem;
+			}
+			.row {
+				display: grid;
+				gap: 1rem;
+				grid-template-columns: 1fr 1fr;
+				margin-top: 12px;
+			}
+			#output {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				min-height: 16rem;
+			}
+			#output svg {
+				max-width: 100%;
+				height: auto;
+				border-radius: 8px;
+			}
+			#info {
+				text-align: center;
+				color: var(--muted);
+				font-size: 0.9rem;
+			}
+			#note {
+				margin: 0;
+				text-align: center;
+				color: var(--warn);
+				font-size: 0.85rem;
+			}
+			#download {
+				display: block;
+				width: fit-content;
+				margin: 1rem auto 0;
+				padding: 0.5rem 1.1rem;
+				background: var(--accent);
+				color: #fff;
+				border-radius: 8px;
+				text-decoration: none;
+				font-weight: 600;
+				font-size: 0.9rem;
+			}
+			footer {
+				margin-top: 3rem;
+				text-align: center;
+				color: var(--muted);
+				font-size: 0.875rem;
+			}
+			a {
+				color: var(--accent);
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>QRCode-JS</h1>
+			<p class="lede">A simple and lightweight QR code generator.</p>
+
+			<form id="form" class="panels">
+				<div class="column">
+					<fieldset>
+						<legend>Content</legend>
+
+						<label for="format">Content type</label>
+						<select id="format"></select>
+
+						<!-- Fields for the chosen format are built by index.ts. -->
+						<div id="fields"></div>
+
+						<p class="hint" id="format-hint"></p>
+					</fieldset>
+
+					<fieldset>
+						<legend>Appearance</legend>
+
+						<div class="row">
+							<div>
+								<label for="level">Error correction</label>
+								<select id="level">
+									<option value="L">Low (~7%)</option>
+									<option value="M" selected>Medium (~15%)</option>
+									<option value="Q">Quartile (~25%)</option>
+									<option value="H">High (~30%)</option>
+								</select>
+							</div>
+							<div>
+								<label for="mask">Mask</label>
+								<select id="mask">
+									<option value="-1" selected>Automatic</option>
+									<option value="0">0</option>
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3">3</option>
+									<option value="4">4</option>
+									<option value="5">5</option>
+									<option value="6">6</option>
+									<option value="7">7</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="row">
+							<div>
+								<label for="scale">Module size</label>
+								<input id="scale" type="range" min="1" max="16" value="8" />
+							</div>
+							<div>
+								<label for="margin">Quiet zone</label>
+								<input id="margin" type="range" min="0" max="16" value="4" />
+							</div>
+						</div>
+
+						<div class="row">
+							<div>
+								<label for="dark">Dark</label>
+								<input id="dark" type="color" value="#000000" />
+							</div>
+							<div>
+								<label for="light">Light</label>
+								<input id="light" type="color" value="#ffffff" />
+							</div>
+						</div>
+
+						<p class="hint">
+							The quiet zone is the light border around the symbol, and it is also the white space inside a frame. The specification asks for 4 modules, though
+							a framed code decodes reliably with 1 or 2, which is what framed codes in the wild tend to use.
+						</p>
+					</fieldset>
+
+					<fieldset>
+						<legend>Frame</legend>
+
+						<div class="row">
+							<div>
+								<label for="frame-width">Band width</label>
+								<input id="frame-width" type="range" min="0" max="10" value="0" />
+							</div>
+							<div>
+								<label for="frame-shaded">Shaded (mitered)</label>
+								<input id="frame-shaded" type="checkbox" checked />
+							</div>
+						</div>
+
+						<div class="row">
+							<div>
+								<label for="frame-from">From</label>
+								<input id="frame-from" type="color" value="#f9be23" />
+							</div>
+							<div>
+								<label for="frame-to">To</label>
+								<input id="frame-to" type="color" value="#f2660f" />
+							</div>
+						</div>
+
+						<div class="row">
+							<div>
+								<label for="frame-title">Top caption</label>
+								<input id="frame-title" type="text" value="Bitcoin" />
+							</div>
+							<div>
+								<label for="frame-caption">Bottom caption</label>
+								<input id="frame-caption" type="text" value="BTC" />
+							</div>
+						</div>
+
+						<div class="row">
+							<div>
+								<label for="frame-title-color">Top text</label>
+								<input id="frame-title-color" type="color" value="#ffffff" />
+							</div>
+							<div>
+								<label for="frame-caption-color">Bottom text</label>
+								<input id="frame-caption-color" type="color" value="#ffffff" />
+							</div>
+						</div>
+
+						<p class="hint">
+							The band is drawn outside the quiet zone, so the image grows rather than the light border being painted over. Set the width to zero for no frame.
+						</p>
+					</fieldset>
+
+					<fieldset>
+						<legend>Logo</legend>
+
+						<label for="logo">Image</label>
+						<input id="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" />
+
+						<div class="row">
+							<div>
+								<label for="logo-size">Logo size</label>
+								<input id="logo-size" type="range" min="2" max="24" value="6" disabled />
+							</div>
+							<div>
+								<label for="logo-padding">Clearance</label>
+								<input id="logo-padding" type="range" min="0" max="4" value="1" disabled />
+							</div>
+						</div>
+
+						<label for="logo-background">Plate</label>
+						<input id="logo-background" type="color" value="#ffffff" disabled />
+
+						<button id="logo-clear" type="button" disabled>Remove logo</button>
+
+						<p class="hint">
+							A logo works only because the error correction can rebuild the modules it hides, so a small symbol at level L or M has no room for one. Raise the
+							error correction level to make space.
+						</p>
+					</fieldset>
+				</div>
+
+				<fieldset>
+					<legend>Result</legend>
+					<div id="output"></div>
+					<p id="info"></p>
+					<p id="note" hidden></p>
+
+					<label for="payload">Encoded payload</label>
+					<pre id="payload" tabindex="0"></pre>
+
+					<a id="download" download="qrcode.svg" hidden>Download SVG</a>
+				</fieldset>
+			</form>
+
+			<footer>
+				<a href="https://github.com/Rabbit-Company/QRCode-JS">GitHub</a> | <a href="https://www.npmjs.com/package/@rabbit-company/qrcode">NPM</a> |
+				<a href="https://jsr.io/@rabbit-company/qrcode">JSR</a>
+			</footer>
+		</main>
+
+		<script type="module" src="index.js"></script>
+	</body>
+</html>

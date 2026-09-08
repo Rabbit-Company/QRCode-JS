@@ -1,0 +1,11 @@
+{
+	"name": "@rabbit-company/qrcode",
+	"version": "1.0.0",
+	"exports": {
+		".": "./src/qrcode.ts",
+		"./payload": "./src/payload.ts"
+	},
+	"publish": {
+		"include": ["LICENSE", "README.md", "src/qrcode.ts", "src/payload.ts", "src/types.ts", "src/constants.ts", "src/segment.ts", "src/reed-solomon.ts"]
+	}
+}
