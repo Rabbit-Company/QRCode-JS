@@ -53,7 +53,7 @@ const PAD_CODEWORDS = [0xec, 0x11] as const;
 
 /** Where a logo sits, in modules, and which modules it hides. */
 interface LogoPlacement {
-	/** Left and top edge of the logo box; it is square and centered. */
+	/** Left and top edge of the logo box, which is square and centered. */
 	origin: number;
 	/** Side length of the logo box. */
 	extent: number;
@@ -107,7 +107,7 @@ export class QRCode {
 	/** Mask pattern applied, 0 to 7. */
 	readonly mask: number;
 
-	/** Row-major module grid; true is dark. */
+	/** Row-major module grid, where true is dark. */
 	private readonly modules: boolean[][];
 
 	/** Modules belonging to function patterns, which masking must not touch. */
@@ -708,8 +708,12 @@ export class QRCode {
 	 * Renders the symbol as an SVG string.
 	 *
 	 * The dark modules are emitted as one `<path>` rather than a rectangle per
-	 * module, which keeps the output small enough to inline in a page or a
-	 * data URL.
+	 * module: each run of dark modules in a row is a stroked horizontal line,
+	 * and the runs chain together with relative moves. That keeps the output
+	 * small enough to inline in a page or a data URL. The line is a module wide
+	 * and centred on the row, so it covers the same band a filled rectangle
+	 * would, and `scale` is applied as a transform on the element so the path
+	 * itself holds only small whole numbers.
 	 *
 	 * @param options - Quiet zone, module scale, colors, logo and document
 	 * details (see {@link SVGOptions}). Omitting `size` leaves the SVG with only
@@ -752,12 +756,28 @@ export class QRCode {
 		const clearFrom = placement?.clearFrom ?? 0;
 		const clearTo = placement?.clearTo ?? 0;
 
-		// Consecutive dark modules in a row are emitted as one wide rectangle
-		// rather than one per module. The drawn area is identical, and on a
-		// typical symbol it cuts the path data to roughly a quarter, which
-		// matters most when the markup is inlined or turned into a data URL.
+		// Consecutive dark modules in a row become one horizontal line, stroked
+		// at a width of one module and centred on the middle of the row, which
+		// covers exactly the same band as a filled rectangle would. Each run
+		// after the first is reached by a relative move from where the previous
+		// one ended, so no coordinate is ever repeated and the runs of a whole
+		// symbol chain into a single `M` followed by short offsets.
+		//
+		// Coordinates stay in modules and `scale` is left to a transform on the
+		// element, which keeps every number a small integer no matter how the
+		// symbol is scaled. Only the half-module the first line is centred on is
+		// ever fractional. Every later move is a whole number of modules.
+		//
+		// Rows are walked upwards so that the vertical part of every move is
+		// zero or negative and can be written with a leading minus. A sign
+		// separates two numbers on its own, so past the opening move the path
+		// needs no spaces or commas at all. That is what the odd-looking `-0`
+		// buys: `toDataURL` percent-encodes a separator into three characters.
+		const shift = margin + band;
 		const parts: string[] = [];
-		for (let y = 0; y < this.size; y++) {
+		let penX = 0;
+		let penY = 0;
+		for (let y = this.size - 1; y >= 0; y--) {
 			const clearedRow = y >= clearFrom && y < clearTo;
 			let start = -1;
 			for (let x = 0; x <= this.size; x++) {
@@ -768,8 +788,12 @@ export class QRCode {
 					continue;
 				}
 				if (start === -1) continue;
-				const width = (x - start) * scale;
-				parts.push(`M${offset + (start + margin) * scale} ${offset + (y + margin) * scale}h${width}v${scale}h-${width}z`);
+				const width = x - start;
+				const column = start + shift;
+				if (parts.length === 0) parts.push(`M${column} ${y + shift}.5h${width}`);
+				else parts.push(`m${column - penX}-${penY - y}h${width}`);
+				penX = column + width;
+				penY = y;
 				start = -1;
 			}
 		}
@@ -780,11 +804,12 @@ export class QRCode {
 		const declaration = options.xmlDeclaration === true ? `<?xml version="1.0" encoding="UTF-8"?>` : "";
 		const logo = placement === undefined || options.logo === undefined ? "" : this.renderLogo(options.logo, placement, margin + band, scale, light);
 		const frame = options.frame === undefined ? "" : renderFrame(options.frame, band, extent, scale);
+		const transform = scale === 1 ? "" : ` transform="scale(${scale})"`;
 
 		return (
 			`${declaration}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${extent} ${extent}"${dimensions} ` +
 			`shape-rendering="crispEdges" role="img">${title}${frame}${background}` +
-			`<path fill="${escapeXml(dark)}" d="${parts.join("")}"/>${logo}</svg>`
+			`<path stroke="${escapeXml(dark)}"${transform} d="${parts.join("")}"/>${logo}</svg>`
 		);
 	}
 

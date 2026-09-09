@@ -332,6 +332,52 @@ describe("rendering", () => {
 		expect(svg).toContain("<path");
 	});
 
+	test("dark runs are stroked lines chained by relative moves", () => {
+		const qr = QRCode.encode(LOGO_TEXT);
+		const data = /<path stroke="[^"]*"[^>]*\sd="([^"]*)"/.exec(qr.toSVG({ scale: 8, margin: 4 }))?.[1] ?? "";
+
+		// One absolute move for the whole symbol. Every later run is reached by
+		// a relative hop from where the previous one ended, so no coordinate is
+		// ever spelled out twice.
+		expect([...data.matchAll(/M/g)]).toHaveLength(1);
+		expect(data.startsWith("M")).toBe(true);
+
+		// Only the half-module the first line is centred on is fractional. Every
+		// other number is a whole count of modules, which is what keeps the path
+		// short and exact at any scale. Rows are walked upwards, so that first
+		// line sits on the bottom row of the symbol.
+		expect([...data.matchAll(/\d*\.\d+/g)].map((match) => match[0])).toEqual([`${qr.size - 1 + 4}.5`]);
+
+		// Walking upwards makes every vertical step zero or negative, so a minus
+		// sign separates the two numbers of a move and the path needs no spaces
+		// or commas beyond the opening one. That matters for `toDataURL`, where
+		// a separator would be percent-encoded into three characters.
+		expect(data.indexOf(" ")).toBe(data.lastIndexOf(" "));
+		expect(data).not.toContain(",");
+
+		// Lines only ever run horizontally, so there is no vertical or closing
+		// command left over from the rectangles these replaced.
+		expect(data).not.toMatch(/[vVzZlLcC]/);
+
+		// Each run covers exactly the dark modules of its row.
+		const grid = qr.toArray();
+		const dark = grid.reduce((total, row) => total + row.filter(Boolean).length, 0);
+		expect([...data.matchAll(/h(\d+)/g)].reduce((total, run) => total + Number(run[1]), 0)).toBe(dark);
+	});
+
+	test("scale rides on a transform rather than the coordinates", () => {
+		const qr = QRCode.encode("test");
+		// The path is identical at every scale, so a fractional scale cannot
+		// spill long decimals into the coordinates.
+		const dataAt = (scale: number) => /<path stroke="[^"]*"[^>]*\sd="([^"]*)"/.exec(qr.toSVG({ scale }))?.[1];
+		expect(dataAt(2.5)).toBe(dataAt(1));
+		expect(dataAt(8)).toBe(dataAt(1));
+
+		// A scale of one is the identity, so the attribute is left off entirely.
+		expect(qr.toSVG({ scale: 1 })).not.toContain("transform=");
+		expect(qr.toSVG({ scale: 2.5 })).toContain('transform="scale(2.5)"');
+	});
+
 	test("SVG honours colors, size, title and declaration", () => {
 		const svg = QRCode.encode("test").toSVG({
 			dark: "#123456",
@@ -340,7 +386,8 @@ describe("rendering", () => {
 			title: "Scan <me>",
 			xmlDeclaration: true,
 		});
-		expect(svg).toContain('fill="#123456"');
+
+		expect(svg).toContain('stroke="#123456"');
 		expect(svg).toContain('fill="#abcdef"');
 		expect(svg).toContain('width="256" height="256"');
 		expect(svg).toContain("<title>Scan &lt;me&gt;</title>");
@@ -399,9 +446,10 @@ describe("rendering", () => {
 			}
 		}
 
-		// Dark modules are emitted as merged horizontal runs, so count the
-		// modules each run covers rather than the number of subpaths.
-		const modulesIn = (markup: string) => [...markup.matchAll(/M\d+ \d+h(\d+)v/g)].reduce((total, run) => total + Number(run[1]), 0);
+		const modulesIn = (markup: string) => {
+			const data = /<path stroke="[^"]*"[^>]*\sd="([^"]*)"/.exec(markup)?.[1] ?? "";
+			return [...data.matchAll(/h(\d+)/g)].reduce((total, run) => total + Number(run[1]), 0);
+		};
 
 		const drawn = modulesIn(svg);
 		expect(drawn).toBe(expected);
@@ -495,11 +543,11 @@ describe("frame", () => {
 
 	test("modules shift inside the band", () => {
 		const framed = qr.toSVG({ scale: 4, margin: 4, frame: { width: 3 } });
-		const path = /d="M(\d+) (\d+)/.exec(framed);
-		// The first dark module is the finder corner at (0, 0), so margin plus
-		// band, times scale.
-		expect(path?.[1]).toBe("28");
-		expect(path?.[2]).toBe("28");
+		const path = /d="M(\d+) ([\d.]+)/.exec(framed);
+
+		expect(path?.[1]).toBe("7");
+		expect(path?.[2]).toBe(`${qr.size - 1 + 7}.5`);
+		expect(framed).toContain('transform="scale(4)"');
 	});
 
 	test("a single color paints one rectangle and no seams", () => {

@@ -1,6 +1,6 @@
 {
 	"name": "@rabbit-company/qrcode",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "A simple and lightweight QR code generator with SVG, data URL and terminal output",
 	"main": "./module/qrcode.js",
 	"types": "./module/qrcode.d.ts",
@@ -35,10 +35,8 @@
 		"prepublishOnly": "bun run typecheck && bun test && bun run build"
 	},
 	"files": [
-		"module/qrcode.js",
-		"module/qrcode.d.ts",
-		"module/payload.js",
-		"module/payload.d.ts"
+		"module/*.js",
+		"module/*.d.ts"
 	],
 	"repository": {
 		"type": "git",
@@ -64,7 +62,6 @@
 	"devDependencies": {
 		"@rabbit-company/logger": "^5.6.1",
 		"@types/bun": "latest",
-		"bun-plugin-dts": "^0.3.0",
-		"typescript": "^5.9.3"
+		"typescript": "^7.0.2"
 	}
 }

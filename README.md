@@ -93,7 +93,7 @@ const svg = QRCode.encode("https://rabbit-company.com").toSVG({
 const quick = toSVG("https://rabbit-company.com", { scale: 8 });
 ```
 
-The dark modules are emitted as a single `<path>`, so the output stays small enough to inline in a page or a data URL.
+The dark modules are emitted as a single `<path>`, so the output stays small enough to inline in a page or a data URL. Each run of dark modules in a row is drawn as one stroked line a module wide, the runs chain together with relative moves, and `scale` is applied as a transform, so the path holds nothing but small whole numbers. The foreground colour therefore rides on `stroke` rather than `fill`, which matters only if you restyle the markup by hand.
 
 ### 5. Render as a data URL
 

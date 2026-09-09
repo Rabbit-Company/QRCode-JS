@@ -30,192 +30,192 @@
  */
 /** Options for {@link url}. */
 export interface UrlOptions {
-	/**
-	 * Uppercase the scheme and host, which are case-insensitive per RFC 3986.
-	 *
-	 * QR alphanumeric mode packs two characters into 11 bits but has no
-	 * lowercase letters, so a lowercase URL falls back to byte mode at 8 bits
-	 * per character. Folding the parts that may safely be folded often drops the
-	 * symbol a whole version. The path, query and fragment are case-sensitive
-	 * and are never touched, and a punycode host (`xn--`) is left alone.
-	 *
-	 * @default true
-	 */
-	compact?: boolean;
+    /**
+     * Uppercase the scheme and host, which are case-insensitive per RFC 3986.
+     *
+     * QR alphanumeric mode packs two characters into 11 bits but has no
+     * lowercase letters, so a lowercase URL falls back to byte mode at 8 bits
+     * per character. Folding the parts that may safely be folded often drops the
+     * symbol a whole version. The path, query and fragment are case-sensitive
+     * and are never touched, and a punycode host (`xn--`) is left alone.
+     *
+     * @default true
+     */
+    compact?: boolean;
 }
 /** Options for {@link email}. */
 export interface EmailOptions {
-	/** One or more recipients. */
-	to: string | string[];
-	/** Subject line. Percent-encoded for you. */
-	subject?: string;
-	/** Message body. Percent-encoded for you, newlines included. */
-	body?: string;
-	/** Carbon copy recipients. */
-	cc?: string | string[];
-	/** Blind carbon copy recipients. */
-	bcc?: string | string[];
+    /** One or more recipients. */
+    to: string | string[];
+    /** Subject line. Percent-encoded for you. */
+    subject?: string;
+    /** Message body. Percent-encoded for you, newlines included. */
+    body?: string;
+    /** Carbon copy recipients. */
+    cc?: string | string[];
+    /** Blind carbon copy recipients. */
+    bcc?: string | string[];
 }
 /** Options for {@link sms}. */
 export interface SmsOptions {
-	/** Recipient number, in the same form {@link tel} accepts. */
-	to: string;
-	/** Message text to prefill. */
-	message?: string;
-	/**
-	 * Which convention to emit.
-	 *
-	 * `"smsto"` produces `SMSTO:number:message`, which originated with ZXing and
-	 * is what most scanner apps actually implement. `"rfc"` produces the RFC
-	 * 5724 `sms:number?body=message`, which is the real standard but less widely
-	 * handled. They are not interchangeable.
-	 *
-	 * @default "smsto"
-	 */
-	format?: "smsto" | "rfc";
+    /** Recipient number, in the same form {@link tel} accepts. */
+    to: string;
+    /** Message text to prefill. */
+    message?: string;
+    /**
+     * Which convention to emit.
+     *
+     * `"smsto"` produces `SMSTO:number:message`, which originated with ZXing and
+     * is what most scanner apps actually implement. `"rfc"` produces the RFC
+     * 5724 `sms:number?body=message`, which is the real standard but less widely
+     * handled. They are not interchangeable.
+     *
+     * @default "smsto"
+     */
+    format?: "smsto" | "rfc";
 }
 /** Options for {@link geo}. */
 export interface GeoOptions {
-	/** Altitude in meters. */
-	altitude?: number;
-	/** Uncertainty in meters, emitted as the RFC 5870 `u` parameter. */
-	uncertainty?: number;
+    /** Altitude in meters. */
+    altitude?: number;
+    /** Uncertainty in meters, emitted as the RFC 5870 `u` parameter. */
+    uncertainty?: number;
 }
 /** Wi-Fi authentication type. */
 export type WifiSecurity = "WPA" | "WEP" | "nopass";
 /** Options for {@link wifi}. */
 export interface WifiOptions {
-	/** Network name, 1 to 32 characters. Escaped for you. */
-	ssid: string;
-	/**
-	 * Pre-shared key. Escaped for you. Omit for an open network.
-	 *
-	 * WPA, WPA2 and WPA3 accept an 8 to 63 character passphrase, or 64 hex
-	 * digits for a raw pre-shared key. WEP accepts 5 or 13 characters, or 10 or
-	 * 26 hex digits.
-	 *
-	 * A passphrase that happens to be an even number of hex digits is quoted so
-	 * it is read as text. A key at one of the real hex key lengths above is left
-	 * bare so it is read as hex.
-	 */
-	password?: string;
-	/**
-	 * Authentication type. `"WPA"` covers WPA, WPA2 and WPA3.
-	 *
-	 * @default "WPA" when a password is given, otherwise "nopass"
-	 */
-	security?: WifiSecurity;
-	/**
-	 * Whether the network suppresses its SSID broadcast.
-	 *
-	 * @default false
-	 */
-	hidden?: boolean;
+    /** Network name, 1 to 32 characters. Escaped for you. */
+    ssid: string;
+    /**
+     * Pre-shared key. Escaped for you. Omit for an open network.
+     *
+     * WPA, WPA2 and WPA3 accept an 8 to 63 character passphrase, or 64 hex
+     * digits for a raw pre-shared key. WEP accepts 5 or 13 characters, or 10 or
+     * 26 hex digits.
+     *
+     * A passphrase that happens to be an even number of hex digits is quoted so
+     * it is read as text. A key at one of the real hex key lengths above is left
+     * bare so it is read as hex.
+     */
+    password?: string;
+    /**
+     * Authentication type. `"WPA"` covers WPA, WPA2 and WPA3.
+     *
+     * @default "WPA" when a password is given, otherwise "nopass"
+     */
+    security?: WifiSecurity;
+    /**
+     * Whether the network suppresses its SSID broadcast.
+     *
+     * @default false
+     */
+    hidden?: boolean;
 }
 /** Hash algorithm for a one-time password. */
 export type OtpAlgorithm = "SHA1" | "SHA256" | "SHA512";
 /** Fields shared by {@link totp} and {@link hotp}. */
 export interface OtpOptions {
-	/**
-	 * Secret key: either unpadded RFC 4648 base32, or the raw bytes to encode.
-	 *
-	 * A string is uppercased, stripped of spaces and `=` padding, and then
-	 * checked, because a secret that is not valid base32 yields an
-	 * authenticator that generates permanently wrong codes rather than
-	 * reporting an error.
-	 */
-	secret: string | Uint8Array;
-	/** Account the secret belongs to, usually a username or email address. */
-	account: string;
-	/** Service name shown by the authenticator. */
-	issuer?: string;
-	/**
-	 * Hash algorithm.
-	 *
-	 * @default "SHA1", and omitted from the URI when it is the default
-	 */
-	algorithm?: OtpAlgorithm;
-	/**
-	 * Number of digits in the generated code, 6 or 8.
-	 *
-	 * @default 6, and omitted from the URI when it is the default
-	 */
-	digits?: number;
+    /**
+     * Secret key: either unpadded RFC 4648 base32, or the raw bytes to encode.
+     *
+     * A string is uppercased, stripped of spaces and `=` padding, and then
+     * checked, because a secret that is not valid base32 yields an
+     * authenticator that generates permanently wrong codes rather than
+     * reporting an error.
+     */
+    secret: string | Uint8Array;
+    /** Account the secret belongs to, usually a username or email address. */
+    account: string;
+    /** Service name shown by the authenticator. */
+    issuer?: string;
+    /**
+     * Hash algorithm.
+     *
+     * @default "SHA1", and omitted from the URI when it is the default
+     */
+    algorithm?: OtpAlgorithm;
+    /**
+     * Number of digits in the generated code, 6 or 8.
+     *
+     * @default 6, and omitted from the URI when it is the default
+     */
+    digits?: number;
 }
 /** Options for {@link totp}. */
 export interface TotpOptions extends OtpOptions {
-	/**
-	 * Seconds each code remains valid.
-	 *
-	 * @default 30, and omitted from the URI when it is the default
-	 */
-	period?: number;
+    /**
+     * Seconds each code remains valid.
+     *
+     * @default 30, and omitted from the URI when it is the default
+     */
+    period?: number;
 }
 /** Options for {@link hotp}. */
 export interface HotpOptions extends OtpOptions {
-	/** Initial counter value. Required for HOTP. */
-	counter: number;
+    /** Initial counter value. Required for HOTP. */
+    counter: number;
 }
 /** A postal address, as used by {@link vcard}. */
 export interface Address {
-	/** Street, including number. */
-	street?: string;
-	/** City or locality. */
-	city?: string;
-	/** State, province or region. */
-	region?: string;
-	/** Postal or ZIP code. */
-	postalCode?: string;
-	/** Country name. */
-	country?: string;
+    /** Street, including number. */
+    street?: string;
+    /** City or locality. */
+    city?: string;
+    /** State, province or region. */
+    region?: string;
+    /** Postal or ZIP code. */
+    postalCode?: string;
+    /** Country name. */
+    country?: string;
 }
 /** Options for {@link vcard} and {@link mecard}. */
 export interface ContactOptions {
-	/** Given name. */
-	firstName?: string;
-	/** Family name. */
-	lastName?: string;
-	/**
-	 * Full display name.
-	 *
-	 * @default the given and family names joined by a space
-	 */
-	displayName?: string;
-	/** Organization or company. */
-	organization?: string;
-	/** Job title. Ignored by {@link mecard}, which has no field for it. */
-	title?: string;
-	/** Phone numbers, in the order they should appear. */
-	phones?: string[];
-	/** Email addresses, in the order they should appear. */
-	emails?: string[];
-	/** Website URLs. */
-	urls?: string[];
-	/** Free-form note. */
-	note?: string;
-	/** Birthday. Only the calendar date is used. */
-	birthday?: Date;
-	/** Postal address. {@link mecard} uses only a single flattened line. */
-	address?: Address;
+    /** Given name. */
+    firstName?: string;
+    /** Family name. */
+    lastName?: string;
+    /**
+     * Full display name.
+     *
+     * @default the given and family names joined by a space
+     */
+    displayName?: string;
+    /** Organization or company. */
+    organization?: string;
+    /** Job title. Ignored by {@link mecard}, which has no field for it. */
+    title?: string;
+    /** Phone numbers, in the order they should appear. */
+    phones?: string[];
+    /** Email addresses, in the order they should appear. */
+    emails?: string[];
+    /** Website URLs. */
+    urls?: string[];
+    /** Free-form note. */
+    note?: string;
+    /** Birthday. Only the calendar date is used. */
+    birthday?: Date;
+    /** Postal address. {@link mecard} uses only a single flattened line. */
+    address?: Address;
 }
 /** Options for {@link event}. */
 export interface EventOptions {
-	/** Event title. */
-	title: string;
-	/** When the event begins. */
-	start: Date;
-	/** When the event ends. Omit for an event with no stated end. */
-	end?: Date;
-	/**
-	 * Treat the event as all-day, emitting dates without a time.
-	 *
-	 * @default false
-	 */
-	allDay?: boolean;
-	/** Where the event takes place. */
-	location?: string;
-	/** Longer description. */
-	description?: string;
+    /** Event title. */
+    title: string;
+    /** When the event begins. */
+    start: Date;
+    /** When the event ends. Omit for an event with no stated end. */
+    end?: Date;
+    /**
+     * Treat the event as all-day, emitting dates without a time.
+     *
+     * @default false
+     */
+    allDay?: boolean;
+    /** Where the event takes place. */
+    location?: string;
+    /** Longer description. */
+    description?: string;
 }
 /**
  * Plain text, unchanged.
@@ -437,100 +437,100 @@ export declare function vcard(options: ContactOptions): string;
  * });
  * ```
  */
-declare function event$1(options: EventOptions): string;
+export declare function event(options: EventOptions): string;
 /** Options shared by the BIP-21 style payment URIs. */
 export interface Bip21Options {
-	/**
-	 * Amount in the currency's main unit, so BTC rather than satoshis.
-	 *
-	 * Pass a string to control the digits exactly. A number is formatted to
-	 * plain decimal notation, because `String(0.00000001)` produces `"1e-8"`
-	 * and no wallet parses exponents.
-	 */
-	amount?: number | string;
-	/** Short label for the recipient, usually shown as the payee name. */
-	label?: string;
-	/** Note attached to the payment request. */
-	message?: string;
-	/**
-	 * Extra query parameters, percent-encoded for you.
-	 *
-	 * BIP-21 reserves the `req-` prefix for parameters a wallet must understand
-	 * or else reject the whole request, so only use that prefix deliberately.
-	 */
-	params?: Readonly<Record<string, string>>;
+    /**
+     * Amount in the currency's main unit, so BTC rather than satoshis.
+     *
+     * Pass a string to control the digits exactly. A number is formatted to
+     * plain decimal notation, because `String(0.00000001)` produces `"1e-8"`
+     * and no wallet parses exponents.
+     */
+    amount?: number | string;
+    /** Short label for the recipient, usually shown as the payee name. */
+    label?: string;
+    /** Note attached to the payment request. */
+    message?: string;
+    /**
+     * Extra query parameters, percent-encoded for you.
+     *
+     * BIP-21 reserves the `req-` prefix for parameters a wallet must understand
+     * or else reject the whole request, so only use that prefix deliberately.
+     */
+    params?: Readonly<Record<string, string>>;
 }
 /** Options for {@link bitcoin}. */
 export interface BitcoinOptions extends Bip21Options {
-	/**
-	 * Uppercase the scheme and a bech32 address to shrink the symbol.
-	 *
-	 * BIP-173 recommends uppercase bech32 in QR codes for exactly this reason,
-	 * and both the scheme and a bech32 address are case-insensitive. A legacy
-	 * base58 address is never touched, since its case carries information.
-	 *
-	 * @default true
-	 */
-	compact?: boolean;
+    /**
+     * Uppercase the scheme and a bech32 address to shrink the symbol.
+     *
+     * BIP-173 recommends uppercase bech32 in QR codes for exactly this reason,
+     * and both the scheme and a bech32 address are case-insensitive. A legacy
+     * base58 address is never touched, since its case carries information.
+     *
+     * @default true
+     */
+    compact?: boolean;
 }
 /** Options for {@link ethereum}. */
 export interface EthereumOptions {
-	/** Recipient address, in `0x` hexadecimal form. */
-	to: string;
-	/**
-	 * Amount in wei.
-	 *
-	 * A `number` is rejected on purpose. One ether is 10^18 wei, far past
-	 * `Number.MAX_SAFE_INTEGER`, so a numeric literal would silently lose
-	 * precision. Use a `bigint` or a digit string.
-	 */
-	value?: bigint | string;
-	/** EIP-155 chain id, such as 1 for mainnet or 137 for Polygon. */
-	chainId?: number;
-	/** Gas limit to suggest to the wallet. */
-	gasLimit?: number;
+    /** Recipient address, in `0x` hexadecimal form. */
+    to: string;
+    /**
+     * Amount in wei.
+     *
+     * A `number` is rejected on purpose. One ether is 10^18 wei, far past
+     * `Number.MAX_SAFE_INTEGER`, so a numeric literal would silently lose
+     * precision. Use a `bigint` or a digit string.
+     */
+    value?: bigint | string;
+    /** EIP-155 chain id, such as 1 for mainnet or 137 for Polygon. */
+    chainId?: number;
+    /** Gas limit to suggest to the wallet. */
+    gasLimit?: number;
 }
 /** Options for {@link erc20}. */
 export interface Erc20Options {
-	/** Address of the token contract. */
-	contract: string;
-	/** Recipient address. */
-	to: string;
-	/**
-	 * Amount in the token's smallest unit, so 10^6 for one USDC.
-	 *
-	 * As with {@link EthereumOptions.value}, a `number` is rejected to avoid
-	 * silent precision loss.
-	 */
-	amount: bigint | string;
-	/** EIP-155 chain id. */
-	chainId?: number;
+    /** Address of the token contract. */
+    contract: string;
+    /** Recipient address. */
+    to: string;
+    /**
+     * Amount in the token's smallest unit, so 10^6 for one USDC.
+     *
+     * As with {@link EthereumOptions.value}, a `number` is rejected to avoid
+     * silent precision loss.
+     */
+    amount: bigint | string;
+    /** EIP-155 chain id. */
+    chainId?: number;
 }
 /** Options for {@link solana}. */
 export interface SolanaOptions {
-	/** Amount in whole tokens, not the smallest unit. */
-	amount?: number | string;
-	/** Mint address of an SPL token, for a token transfer rather than SOL. */
-	splToken?: string;
-	/** Account the wallet should include as a reference, for reconciliation. */
-	reference?: string;
-	/** Payee name shown by the wallet. */
-	label?: string;
-	/** Note shown by the wallet. */
-	message?: string;
-	/** Memo recorded on chain with the transfer. */
-	memo?: string;
+    /** Amount in whole tokens, not the smallest unit. */
+    amount?: number | string;
+    /** Mint address of an SPL token, for a token transfer rather than SOL. */
+    splToken?: string;
+    /** Account the wallet should include as a reference, for reconciliation. */
+    reference?: string;
+    /** Payee name shown by the wallet. */
+    label?: string;
+    /** Note shown by the wallet. */
+    message?: string;
+    /** Memo recorded on chain with the transfer. */
+    memo?: string;
 }
 /** Options for {@link monero}. */
 export interface MoneroOptions {
-	/** Amount in XMR. */
-	amount?: number | string;
-	/** Payment id to attach to the transaction. */
-	paymentId?: string;
-	/** Payee name shown by the wallet. */
-	recipientName?: string;
-	/** Note shown by the wallet. */
-	description?: string;
+    /** Amount in XMR. */
+    amount?: number | string;
+    /** Payment id to attach to the transaction. */
+    paymentId?: string;
+    /** Payee name shown by the wallet. */
+    recipientName?: string;
+    /** Note shown by the wallet. */
+    description?: string;
 }
 /**
  * A payment request in the BIP-21 URI scheme, for any currency that uses it.
@@ -675,109 +675,109 @@ export declare function monero(address: string, options?: MoneroOptions): string
  * ```
  */
 export declare function lightning(invoice: string, options?: {
-	compact?: boolean;
+    compact?: boolean;
 }): string;
 /** Options for {@link upi}. */
 export interface UpiOptions {
-	/** Payee virtual payment address, such as `"merchant@bank"`. */
-	payeeAddress: string;
-	/** Payee name, shown by the paying app. */
-	payeeName: string;
-	/** Amount in rupees. */
-	amount?: number | string;
-	/** Smallest amount the payer may send, for an open request. */
-	minimumAmount?: number | string;
-	/** Note shown with the request, at most 50 characters. */
-	note?: string;
-	/** Reference id used to reconcile the payment. */
-	reference?: string;
-	/** Transaction id, usually set by a payment gateway. */
-	transactionId?: string;
-	/** Four digit merchant category code. */
-	merchantCode?: string;
+    /** Payee virtual payment address, such as `"merchant@bank"`. */
+    payeeAddress: string;
+    /** Payee name, shown by the paying app. */
+    payeeName: string;
+    /** Amount in rupees. */
+    amount?: number | string;
+    /** Smallest amount the payer may send, for an open request. */
+    minimumAmount?: number | string;
+    /** Note shown with the request, at most 50 characters. */
+    note?: string;
+    /** Reference id used to reconcile the payment. */
+    reference?: string;
+    /** Transaction id, usually set by a payment gateway. */
+    transactionId?: string;
+    /** Four digit merchant category code. */
+    merchantCode?: string;
 }
 /** Options for {@link epc}. */
 export interface EpcOptions {
-	/** Beneficiary name, at most 70 characters. */
-	name: string;
-	/** Beneficiary IBAN, checked with the mod-97 checksum. */
-	iban: string;
-	/** Beneficiary BIC. Required by version `"001"` and optional in `"002"`. */
-	bic?: string;
-	/** Amount in euro, from 0.01 to 999999999.99. Omit for an open amount. */
-	amount?: number | string;
-	/** Four letter SEPA purpose code. */
-	purpose?: string;
-	/**
-	 * Structured creditor reference.
-	 *
-	 * The standard allows either this or {@link EpcOptions.remittance}, never
-	 * both, because they occupy alternative lines of the same block.
-	 */
-	reference?: string;
-	/** Unstructured remittance text, at most 140 characters. */
-	remittance?: string;
-	/** Beneficiary to originator information, at most 70 characters. */
-	information?: string;
-	/**
-	 * Specification version.
-	 *
-	 * @default "002", which makes the BIC optional
-	 */
-	version?: "001" | "002";
+    /** Beneficiary name, at most 70 characters. */
+    name: string;
+    /** Beneficiary IBAN, checked with the mod-97 checksum. */
+    iban: string;
+    /** Beneficiary BIC. Required by version `"001"` and optional in `"002"`. */
+    bic?: string;
+    /** Amount in euro, from 0.01 to 999999999.99. Omit for an open amount. */
+    amount?: number | string;
+    /** Four letter SEPA purpose code. */
+    purpose?: string;
+    /**
+     * Structured creditor reference.
+     *
+     * The standard allows either this or {@link EpcOptions.remittance}, never
+     * both, because they occupy alternative lines of the same block.
+     */
+    reference?: string;
+    /** Unstructured remittance text, at most 140 characters. */
+    remittance?: string;
+    /** Beneficiary to originator information, at most 70 characters. */
+    information?: string;
+    /**
+     * Specification version.
+     *
+     * @default "002", which makes the BIC optional
+     */
+    version?: "001" | "002";
 }
 /** Options for {@link gs1}. */
 export interface Gs1Options {
-	/** GTIN of 8, 12, 13 or 14 digits. The check digit is verified. */
-	gtin: string;
-	/** Consumer product variant, GS1 application identifier 22. */
-	cpv?: string;
-	/** Batch or lot number, application identifier 10. */
-	lot?: string;
-	/** Serial number, application identifier 21. */
-	serial?: string;
-	/**
-	 * Further data attributes keyed by application identifier, such as
-	 * `{ "17": "251231" }` for an expiry date.
-	 */
-	attributes?: Readonly<Record<string, string>>;
-	/**
-	 * Resolver the link points at.
-	 *
-	 * @default "https://id.gs1.org"
-	 */
-	domain?: string;
+    /** GTIN of 8, 12, 13 or 14 digits. The check digit is verified. */
+    gtin: string;
+    /** Consumer product variant, GS1 application identifier 22. */
+    cpv?: string;
+    /** Batch or lot number, application identifier 10. */
+    lot?: string;
+    /** Serial number, application identifier 21. */
+    serial?: string;
+    /**
+     * Further data attributes keyed by application identifier, such as
+     * `{ "17": "251231" }` for an expiry date.
+     */
+    attributes?: Readonly<Record<string, string>>;
+    /**
+     * Resolver the link points at.
+     *
+     * @default "https://id.gs1.org"
+     */
+    domain?: string;
 }
 /** Options for {@link pix}. */
 export interface PixOptions {
-	/** PIX key: a CPF, CNPJ, phone number, email address or random UUID. */
-	key: string;
-	/** Merchant name, at most 25 characters. */
-	name: string;
-	/** Merchant city, at most 15 characters. */
-	city: string;
-	/** Amount in reais. Omit to let the payer choose. */
-	amount?: number | string;
-	/**
-	 * Reference label for reconciliation, at most 25 characters.
-	 *
-	 * @default "***", the value the standard uses to mean no reference
-	 */
-	reference?: string;
-	/** Description shown alongside the key. */
-	description?: string;
-	/**
-	 * Mark the code as single use, so a wallet refuses to pay it twice.
-	 *
-	 * @default false
-	 */
-	oneTime?: boolean;
-	/**
-	 * Four digit merchant category code.
-	 *
-	 * @default "0000", meaning unspecified
-	 */
-	merchantCategoryCode?: string;
+    /** PIX key: a CPF, CNPJ, phone number, email address or random UUID. */
+    key: string;
+    /** Merchant name, at most 25 characters. */
+    name: string;
+    /** Merchant city, at most 15 characters. */
+    city: string;
+    /** Amount in reais. Omit to let the payer choose. */
+    amount?: number | string;
+    /**
+     * Reference label for reconciliation, at most 25 characters.
+     *
+     * @default "***", the value the standard uses to mean no reference
+     */
+    reference?: string;
+    /** Description shown alongside the key. */
+    description?: string;
+    /**
+     * Mark the code as single use, so a wallet refuses to pay it twice.
+     *
+     * @default false
+     */
+    oneTime?: boolean;
+    /**
+     * Four digit merchant category code.
+     *
+     * @default "0000", meaning unspecified
+     */
+    merchantCategoryCode?: string;
 }
 /**
  * A Unified Payments Interface request, as used in India.
@@ -868,48 +868,48 @@ export declare function gs1(options: Gs1Options): string;
 export declare function pix(options: PixOptions): string;
 /** Options for {@link upn}. */
 export interface UpnOptions {
-	/** Recipient IBAN, checked with the mod-97 checksum. */
-	recipientIban: string;
-	/** Recipient name, at most 33 characters. */
-	recipientName: string;
-	/** Recipient street and number, at most 33 characters. */
-	recipientStreet?: string;
-	/** Recipient postcode and town, at most 33 characters. */
-	recipientCity?: string;
-	/**
-	 * Recipient reference, at most 26 characters.
-	 *
-	 * @default "SI99", which the standard uses to mean no reference
-	 */
-	recipientReference?: string;
-	/** Amount in euro. Omit to let the payer enter it. */
-	amount?: number | string;
-	/**
-	 * ISO 20022 purpose code, four letters.
-	 *
-	 * @default "OTHR"
-	 */
-	purposeCode?: string;
-	/** Purpose text shown to the payer, at most 42 characters. */
-	purpose?: string;
-	/** Date the payment falls due. */
-	dueDate?: Date;
-	/** Payer IBAN, at most 19 characters. */
-	payerIban?: string;
-	/** Payer reference, at most 26 characters. */
-	payerReference?: string;
-	/** Payer name, at most 33 characters. */
-	payerName?: string;
-	/** Payer street and number, at most 33 characters. */
-	payerStreet?: string;
-	/** Payer postcode and town, at most 33 characters. */
-	payerCity?: string;
-	/**
-	 * Flag the transfer as urgent.
-	 *
-	 * @default false
-	 */
-	urgent?: boolean;
+    /** Recipient IBAN, checked with the mod-97 checksum. */
+    recipientIban: string;
+    /** Recipient name, at most 33 characters. */
+    recipientName: string;
+    /** Recipient street and number, at most 33 characters. */
+    recipientStreet?: string;
+    /** Recipient postcode and town, at most 33 characters. */
+    recipientCity?: string;
+    /**
+     * Recipient reference, at most 26 characters.
+     *
+     * @default "SI99", which the standard uses to mean no reference
+     */
+    recipientReference?: string;
+    /** Amount in euro. Omit to let the payer enter it. */
+    amount?: number | string;
+    /**
+     * ISO 20022 purpose code, four letters.
+     *
+     * @default "OTHR"
+     */
+    purposeCode?: string;
+    /** Purpose text shown to the payer, at most 42 characters. */
+    purpose?: string;
+    /** Date the payment falls due. */
+    dueDate?: Date;
+    /** Payer IBAN, at most 19 characters. */
+    payerIban?: string;
+    /** Payer reference, at most 26 characters. */
+    payerReference?: string;
+    /** Payer name, at most 33 characters. */
+    payerName?: string;
+    /** Payer street and number, at most 33 characters. */
+    payerStreet?: string;
+    /** Payer postcode and town, at most 33 characters. */
+    payerCity?: string;
+    /**
+     * Flag the transfer as urgent.
+     *
+     * @default false
+     */
+    urgent?: boolean;
 }
 /**
  * Encodes text as ISO-8859-2, the character set UPN QR requires.
@@ -972,9 +972,3 @@ export declare function latin2(value: string): Uint8Array;
  * ```
  */
 export declare function upn(options: UpnOptions): string;
-
-export {
-	event$1 as event,
-};
-
-export {};

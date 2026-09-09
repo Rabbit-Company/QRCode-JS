@@ -1,5 +1,5 @@
-import dts from "bun-plugin-dts";
 import fs from "fs/promises";
+import { $ } from "bun";
 import { Logger } from "@rabbit-company/logger";
 
 await fs.rm("./module", { recursive: true, force: true });
@@ -13,13 +13,22 @@ let moduleBuild = await Bun.build({
 	outdir: "./module",
 	target: "browser",
 	format: "esm",
-	plugins: [dts({ output: { noBanner: true } })],
 });
 
 if (moduleBuild.success) {
 	logger.info("Bulding module complete");
 } else {
 	logger.error("Bulding module failed");
+}
+
+logger.info("Start building types...");
+const types = await $`tsc -p tsconfig.build.json`.nothrow();
+
+if (types.exitCode === 0) {
+	logger.info("Building types complete");
+} else {
+	logger.error("Building types failed");
+	logger.error(types.stderr.toString() || types.stdout.toString());
 }
 
 fs.cp("./src/index.html", "./dist/index.html", { recursive: true, force: true });
