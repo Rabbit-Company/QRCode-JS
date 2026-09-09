@@ -399,9 +399,13 @@ describe("rendering", () => {
 			}
 		}
 
-		const drawn = (svg.match(/M\d/g) ?? []).length;
+		// Dark modules are emitted as merged horizontal runs, so count the
+		// modules each run covers rather than the number of subpaths.
+		const modulesIn = (markup: string) => [...markup.matchAll(/M\d+ \d+h(\d+)v/g)].reduce((total, run) => total + Number(run[1]), 0);
+
+		const drawn = modulesIn(svg);
 		expect(drawn).toBe(expected);
-		expect(drawn).toBeLessThan((qr.toSVG().match(/M\d/g) ?? []).length);
+		expect(drawn).toBeLessThan(modulesIn(qr.toSVG()));
 	});
 
 	test("markup content is nested rather than referenced", () => {

@@ -1,6 +1,6 @@
 {
 	"name": "@rabbit-company/qrcode",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "A simple and lightweight QR code generator with SVG, data URL and terminal output",
 	"main": "./module/qrcode.js",
 	"types": "./module/qrcode.d.ts",

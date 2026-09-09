@@ -752,14 +752,25 @@ export class QRCode {
 		const clearFrom = placement?.clearFrom ?? 0;
 		const clearTo = placement?.clearTo ?? 0;
 
+		// Consecutive dark modules in a row are emitted as one wide rectangle
+		// rather than one per module. The drawn area is identical, and on a
+		// typical symbol it cuts the path data to roughly a quarter, which
+		// matters most when the markup is inlined or turned into a data URL.
 		const parts: string[] = [];
 		for (let y = 0; y < this.size; y++) {
 			const clearedRow = y >= clearFrom && y < clearTo;
-			for (let x = 0; x < this.size; x++) {
-				if (clearedRow && x >= clearFrom && x < clearTo) continue;
-				if (this.getModule(x, y)) {
-					parts.push(`M${offset + (x + margin) * scale} ${offset + (y + margin) * scale}h${scale}v${scale}h-${scale}z`);
+			let start = -1;
+			for (let x = 0; x <= this.size; x++) {
+				const cleared = clearedRow && x >= clearFrom && x < clearTo;
+				const on = x < this.size && !cleared && this.getModule(x, y);
+				if (on) {
+					if (start === -1) start = x;
+					continue;
 				}
+				if (start === -1) continue;
+				const width = (x - start) * scale;
+				parts.push(`M${offset + (start + margin) * scale} ${offset + (y + margin) * scale}h${width}v${scale}h-${width}z`);
+				start = -1;
 			}
 		}
 
