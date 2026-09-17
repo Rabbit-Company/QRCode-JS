@@ -1,4 +1,4 @@
-import { ALPHANUMERIC_CHARSET, CHAR_COUNT_BITS, MODE_BITS, versionGroup } from "./constants.ts";
+import { ALPHANUMERIC_CHARSET, CHAR_COUNT_BITS, ECI_MODE_BITS, MAX_ECI, MODE_BITS, versionGroup } from "./constants.ts";
 import { Mode } from "./types.ts";
 
 /** A run of data sharing one encoding mode. */
@@ -120,6 +120,40 @@ export function writeSegment(segment: Segment, version: number, out: BitBuffer):
 	out.push(MODE_BITS[segment.mode], 4);
 	out.push(segment.length, CHAR_COUNT_BITS[segment.mode][versionGroup(version)]);
 	out.append(segment.bits);
+}
+
+/** Throws unless the designator is a whole number the ECI header can carry. */
+export function checkEci(designator: number): void {
+	if (!Number.isInteger(designator) || designator < 0 || designator > MAX_ECI) {
+		throw new RangeError(`eci must be an integer between 0 and ${MAX_ECI}.`);
+	}
+}
+
+/** Bits an ECI header occupies: the mode indicator plus a one, two or three byte designator. */
+export function eciBitLength(designator: number): number {
+	if (designator < 128) return 4 + 8;
+	if (designator < 16384) return 4 + 16;
+	return 4 + 24;
+}
+
+/**
+ * Serializes an ECI header.
+ *
+ * The designator is packed the way UTF-8 packs a code point: the count of
+ * leading one bits in the first byte says how many bytes follow, so values up
+ * to 127 take one byte, up to 16383 two, and the rest three.
+ */
+export function writeEci(designator: number, out: BitBuffer): void {
+	out.push(ECI_MODE_BITS, 4);
+	if (designator < 128) {
+		out.push(designator, 8);
+	} else if (designator < 16384) {
+		out.push(0b10, 2);
+		out.push(designator, 14);
+	} else {
+		out.push(0b110, 3);
+		out.push(designator, 21);
+	}
 }
 
 /**

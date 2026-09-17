@@ -39,6 +39,18 @@ export declare function segmentBitLength(segment: Segment, version: number): num
 export declare function totalBitLength(segments: Segment[], version: number): number;
 /** Serializes a segment with its mode and character count indicators. */
 export declare function writeSegment(segment: Segment, version: number, out: BitBuffer): void;
+/** Throws unless the designator is a whole number the ECI header can carry. */
+export declare function checkEci(designator: number): void;
+/** Bits an ECI header occupies: the mode indicator plus a one, two or three byte designator. */
+export declare function eciBitLength(designator: number): number;
+/**
+ * Serializes an ECI header.
+ *
+ * The designator is packed the way UTF-8 packs a code point: the count of
+ * leading one bits in the first byte says how many bytes follow, so values up
+ * to 127 take one byte, up to 16383 two, and the rest three.
+ */
+export declare function writeEci(designator: number, out: BitBuffer): void;
 /**
  * Encodes text as the cheapest possible sequence of segments for a version.
  *

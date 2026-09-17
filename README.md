@@ -29,7 +29,7 @@ npm i --save @rabbit-company/qrcode
 ### 2. Import library
 
 ```js
-import { QRCode, ErrorCorrectionLevel, toSVG, toDataURL, toText } from "@rabbit-company/qrcode";
+import { QRCode, ECI, ErrorCorrectionLevel, toSVG, toDataURL, toText } from "@rabbit-company/qrcode";
 ```
 
 ### 3. Generate a QR code
@@ -45,6 +45,7 @@ import { QRCode, ErrorCorrectionLevel, toSVG, toDataURL, toText } from "@rabbit-
      - maxVersion (Number) <40> - Largest symbol version to consider
      - mask (Number) <-1> - Mask pattern 0-7, or -1 to choose automatically
      - boostEcc (Boolean) <true> - Raise the correction level if it is free
+     - eci (Number) <undefined> - ECI designator naming the character set, see ECI
 
 */
 
@@ -63,6 +64,9 @@ const robust = QRCode.encode("https://rabbit-company.com", {
 
 // Encode raw bytes instead of text
 const binary = QRCode.encodeBinary(new Uint8Array([1, 2, 3, 4]));
+
+// Label bytes with their character set, so readers decode them correctly
+const labelled = QRCode.encodeBinary(latin2("Račun 052/26"), { eci: ECI.ISO_8859_2 });
 ```
 
 ### 4. Render as SVG
@@ -263,10 +267,12 @@ epc({ name: "Rabbit Company", iban: "DE89 3704 0044 0532 0130 00", amount: 12.5,
 - The payload carries a **three digit control sum** counting the characters of the nineteen fields including their line terminators, and the payload ends there with no further newline.
 - The character set is **ISO-8859-2**, not UTF-8.
 
-That last point needs care, because this library encodes text as UTF-8, where `c` with a caron takes two bytes instead of one. A UPN QR built with `QRCode.encode` would show mojibake in a bank application, so pair `upn()` with `latin2()` and `encodeBinary`:
+That last point needs care, because this library encodes text as UTF-8, where `c` with a caron takes two bytes instead of one. A UPN QR built with `QRCode.encode` would show mojibake in a bank application, so pair `upn()` with `latin2()` and `encodeBinary`.
+
+The ZBS technical standard also fixes the symbol itself: **version 15, error correction level M, byte mode, and ECI 000004** to say the bytes are ISO-8859-2. Without the ECI a reader falls back to ISO-8859-1 and shows `Raèun` for `Račun`:
 
 ```js
-import { QRCode } from "@rabbit-company/qrcode";
+import { ECI, ErrorCorrectionLevel, QRCode } from "@rabbit-company/qrcode";
 import { latin2, upn } from "@rabbit-company/qrcode/payload";
 
 const payload = upn({
@@ -277,7 +283,13 @@ const payload = upn({
 	purpose: "Racun 2026-014",
 });
 
-const qr = QRCode.encodeBinary(latin2(payload));
+const qr = QRCode.encodeBinary(latin2(payload), {
+	minVersion: 15,
+	maxVersion: 15,
+	errorCorrectionLevel: ErrorCorrectionLevel.MEDIUM,
+	boostEcc: false,
+	eci: ECI.ISO_8859_2,
+});
 ```
 
 `latin2()` throws rather than substituting when a character has no Latin-2 form, since quietly mangling a payment instruction is worse than refusing to build it. The recipient IBAN is checked with its mod-97 checksum, and every field is length-capped to the standard.
@@ -445,4 +457,4 @@ Whether splitting helps depends on the exact content: a mode switch costs a new 
 ## Notes
 
 - Kanji mode is not implemented. Japanese text is encoded as UTF-8 in byte mode, which is a little larger but decodes correctly everywhere.
-- ECI mode is not implemented. Byte mode content is UTF-8, which every modern reader handles.
+- Text passed to `encode` is UTF-8 without an ECI header, which every modern reader handles. Pass `eci` when a format requires the character set to be declared, or when encoding bytes in another character set with `encodeBinary`. The `ECI` enum names ISO-8859-1 (3), ISO-8859-2 (4) and UTF-8 (26), and any other designator from the AIM register can be passed as a number. The header costs 12 bits for designators up to 127.

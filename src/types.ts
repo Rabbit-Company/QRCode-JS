@@ -30,6 +30,23 @@ export enum Mode {
 	BYTE = "byte",
 }
 
+/**
+ * Extended Channel Interpretation designators for common character sets.
+ *
+ * An ECI tells the reader how to interpret the bytes that follow. Without one,
+ * ISO/IEC 18004 says byte mode is ISO-8859-1, so a reader that follows the
+ * standard shows `è` where ISO-8859-2 meant `č`. Any other designator from the
+ * AIM ECI register can be passed as a plain number.
+ */
+export enum ECI {
+	/** Latin-1, Western European. The default when no ECI is given. */
+	ISO_8859_1 = 3,
+	/** Latin-2, Central European. Required by the Slovenian UPN QR. */
+	ISO_8859_2 = 4,
+	/** UTF-8. */
+	UTF_8 = 26,
+}
+
 /** Options accepted when creating a QR code. */
 export interface QRCodeOptions {
 	/**
@@ -59,6 +76,13 @@ export interface QRCodeOptions {
 	 * @default true
 	 */
 	boostEcc?: boolean;
+	/**
+	 * Extended Channel Interpretation designator (0-999999) written before the
+	 * data, telling the reader which character set the bytes are in. See
+	 * {@link ECI} for common values. Left out, no ECI header is written.
+	 * @default undefined
+	 */
+	eci?: number;
 }
 
 /**

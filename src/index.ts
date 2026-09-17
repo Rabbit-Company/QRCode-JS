@@ -1,4 +1,4 @@
-import { QRCode, ErrorCorrectionLevel, type FrameOptions, type LogoOptions, type SVGOptions } from "./qrcode.ts";
+import { ECI, QRCode, ErrorCorrectionLevel, type FrameOptions, type LogoOptions, type QRCodeOptions, type SVGOptions } from "./qrcode.ts";
 import {
 	bip21,
 	bitcoin,
@@ -122,11 +122,17 @@ interface Format {
 	 * Character set the payload must be encoded in.
 	 *
 	 * Only UPN QR departs from UTF-8, and it has to, since a bank application
-	 * reads its bytes as ISO-8859-2.
+	 * reads its bytes as ISO-8859-2. The bytes are then labelled with the
+	 * matching ECI, or a reader falls back to ISO-8859-1 and shows è for č.
 	 *
 	 * @default "utf-8"
 	 */
 	charset?: "utf-8" | "iso-8859-2";
+	/**
+	 * Symbol settings the format's standard fixes, applied over the page's own
+	 * level and mask choices.
+	 */
+	symbol?: QRCodeOptions;
 }
 
 /**
@@ -490,7 +496,8 @@ const FORMATS: readonly Format[] = [
 		id: "upn",
 		label: "UPN QR (Slovenia)",
 		charset: "iso-8859-2",
-		hint: "This is what Slovenian bank apps read for skeniraj in placaj. They do not read the EPC GiroCode above. The IBAN below is a made-up number that only satisfies the international mod-97 check, so a bank will parse the code and then refuse to price it. Put your own account in to test properly.",
+		symbol: { minVersion: 15, maxVersion: 15, errorCorrectionLevel: ErrorCorrectionLevel.MEDIUM, boostEcc: false },
+		hint: "This is what Slovenian bank apps read for skeniraj in placaj. They do not read the EPC GiroCode above. As the ZBS standard requires, the code is always version 15 at error correction level M, with ECI 4 declaring the ISO-8859-2 character set. The IBAN below is a made-up number that only satisfies the international mod-97 check, so a bank will parse the code and then refuse to price it. Put your own account in to test properly.",
 		fields: [
 			{ name: "recipientIban", label: "Recipient IBAN", value: "SI56 2633 0001 2039 086" },
 			{ name: "recipientName", label: "Recipient", value: "Rabbit Company", half: true },
@@ -864,7 +871,8 @@ function render(): void {
 
 	let qr: QRCode;
 	try {
-		qr = format.charset === "iso-8859-2" ? QRCode.encodeBinary(latin2(encoded), encoding) : QRCode.encode(encoded, encoding);
+		const options: QRCodeOptions = { ...encoding, ...format.symbol };
+		qr = format.charset === "iso-8859-2" ? QRCode.encodeBinary(latin2(encoded), { ...options, eci: ECI.ISO_8859_2 }) : QRCode.encode(encoded, options);
 	} catch (err) {
 		clear(describe(err), encoded);
 		return;

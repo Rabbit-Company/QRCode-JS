@@ -65,6 +65,12 @@ export const MODE_BITS = {
 	byte: 0b0100,
 } as const;
 
+/** Four-bit mode indicator that introduces an Extended Channel Interpretation. */
+export const ECI_MODE_BITS = 0b0111;
+
+/** Largest ECI designator the six-digit assignment value allows. */
+export const MAX_ECI = 999999;
+
 /** Characters encodable in alphanumeric mode, in their code-point order. */
 export const ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
 

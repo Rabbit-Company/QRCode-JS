@@ -95,8 +95,8 @@ export declare class QRCode {
      * @returns The encoded symbol, ready to render.
      * @throws {RangeError} when the text does not fit in `options.maxVersion` at
      * the requested level, when `minVersion` exceeds `maxVersion`, when either
-     * falls outside 1 to 40 or is not an integer, or when `mask` is outside -1
-     * to 7.
+     * falls outside 1 to 40 or is not an integer, when `mask` is outside -1
+     * to 7, or when `eci` is not an integer from 0 to 999999.
      *
      * @example Default settings
      * ```typescript
@@ -122,11 +122,17 @@ export declare class QRCode {
      * @param options - Same options as {@link QRCode.encode}.
      * @returns The encoded symbol, ready to render.
      * @throws {RangeError} when the data does not fit in `options.maxVersion` at
-     * the requested level, or when the version range or mask is out of bounds.
+     * the requested level, or when the version range, mask or ECI is out of
+     * bounds.
      *
      * @example
      * ```typescript
      * const qr = QRCode.encodeBinary(new Uint8Array([1, 2, 3, 4]));
+     * ```
+     *
+     * @example Text in another character set, labelled so readers decode it
+     * ```typescript
+     * const qr = QRCode.encodeBinary(latin2("Račun 052/26"), { eci: ECI.ISO_8859_2 });
      * ```
      */
     static encodeBinary(data: Uint8Array, options?: QRCodeOptions): QRCode;
@@ -136,10 +142,10 @@ export declare class QRCode {
      *
      * @param segmentsFor - Produces the segments for a candidate version, which
      * matters because the character count field widens at versions 10 and 27.
-     * @param options - Version range, requested level, mask and boost flag.
+     * @param options - Version range, requested level, mask, boost flag and ECI.
      * @returns The finished symbol.
-     * @throws {RangeError} when the segments do not fit in `maxVersion`, or when
-     * the version range or mask is out of bounds.
+     * @throws {RangeError} when the segments and any ECI header do not fit in
+     * `maxVersion`, or when the version range, mask or ECI is out of bounds.
      */
     private static fromSegments;
     /**
@@ -434,6 +440,6 @@ export declare function toDataURL(text: string, options?: QRCodeOptions & SVGOpt
  * ```
  */
 export declare function toText(text: string, options?: QRCodeOptions & TextOptions): string;
-export { ErrorCorrectionLevel, Mode } from "./types.ts";
+export { ECI, ErrorCorrectionLevel, Mode } from "./types.ts";
 export type { FrameOptions, LogoOptions, QRCodeOptions, SVGOptions, TextOptions } from "./types.ts";
 export { MAX_VERSION, MIN_VERSION } from "./constants.ts";

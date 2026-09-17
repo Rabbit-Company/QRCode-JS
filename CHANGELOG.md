@@ -4,12 +4,23 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-17
+
+### Added
+
+- **`eci` option for `QRCode.encode`, `QRCode.encodeBinary`, `toSVG`, `toDataURL` and `toText`.** It writes an Extended Channel Interpretation header before the data, telling the reader which character set the bytes are in. Designators from 0 to 999999 are accepted, packed into one, two or three bytes as ISO/IEC 18004 describes, and the header is counted when choosing the symbol version.
+- **`ECI` enum** with `ISO_8859_1` (3), `ISO_8859_2` (4) and `UTF_8` (26).
+
+### Fixed
+
+- A Slovenian UPN QR can now carry the ECI 000004 its standard requires. Without it, readers decoded the ISO-8859-2 bytes as ISO-8859-1 and showed `Raèun` for `Račun`. The README's UPN example now also pins version 15 and error correction level M, as the standard asks.
+- The demo page now labels UPN QR codes with ECI 4 and always draws them at version 15 and level M, so scanning one shows `č` instead of `è`.
+
 ## [1.1.0] - 2026-09-09
 
 ### Changed
 
 - **SVG output is roughly 2.6x smaller, and data URLs roughly 2.8x smaller.** Across a spread of payloads and geometries the total went from 58,772 to 22,702 characters for `toSVG`, and from 66,711 to 23,865 for `toDataURL`. A plain short URL at `scale: 8` drops from 2,601 to 1,162 characters. Three things get it there:
-
   - Each run of dark modules in a row is now drawn as a **stroked horizontal line** one module wide rather than a filled rectangle, which spends 8 characters where the rectangle spent 12.
   - Runs **chain together with relative moves**, so the whole symbol is one absolute `M` followed by short offsets and no coordinate is ever written twice.
   - **`scale` is applied as a `transform` on the path** instead of being multiplied into every coordinate, so the path data holds nothing but small whole numbers and is byte for byte identical at every scale.

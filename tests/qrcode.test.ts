@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { QRCode, ErrorCorrectionLevel, Mode, toDataURL, toSVG, toText } from "../src/qrcode.ts";
+import { ECI, QRCode, ErrorCorrectionLevel, Mode, toDataURL, toSVG, toText } from "../src/qrcode.ts";
 import { ECC_BLOCKS, ECC_CODEWORDS_PER_BLOCK, alignmentPositions, dataCodewords, rawDataModules } from "../src/constants.ts";
-import { isAlphanumeric, isNumeric, makeSegments } from "../src/segment.ts";
+import { BitBuffer, eciBitLength, isAlphanumeric, isNumeric, makeSegments, writeEci } from "../src/segment.ts";
 import { encode as reedSolomon, multiply } from "../src/reed-solomon.ts";
 
 /** SHA-256 (truncated) of the flattened module grid, for golden comparisons. */
@@ -320,6 +320,68 @@ describe("errors", () => {
  * at all, so these need something that encodes to a realistic size.
  */
 const LOGO_TEXT = "https://rabbit-company.com";
+
+describe("extended channel interpretation", () => {
+	function header(designator: number): Uint8Array {
+		const bits = new BitBuffer();
+		writeEci(designator, bits);
+		expect(bits.length).toBe(eciBitLength(designator));
+		return bits.toBytes();
+	}
+
+	test("names the common character sets by their registered numbers", () => {
+		expect(ECI.ISO_8859_1).toBe(3);
+		expect(ECI.ISO_8859_2).toBe(4);
+		expect(ECI.UTF_8).toBe(26);
+	});
+
+	test("packs the designator into one, two or three bytes after the 0111 mode indicator", () => {
+		expect([...header(ECI.ISO_8859_2)]).toEqual([0x70, 0x40]);
+		expect([...header(127)]).toEqual([0x77, 0xf0]);
+		expect([...header(128)]).toEqual([0x78, 0x08, 0x00]);
+		expect([...header(16383)]).toEqual([0x7b, 0xff, 0xf0]);
+		expect([...header(16384)]).toEqual([0x7c, 0x04, 0x00, 0x00]);
+		expect([...header(999999)]).toEqual([0x7c, 0xf4, 0x23, 0xf0]);
+		expect([eciBitLength(0), eciBitLength(128), eciBitLength(16384)]).toEqual([12, 20, 28]);
+	});
+
+	test("counts the header against the capacity", () => {
+		const options = { errorCorrectionLevel: ErrorCorrectionLevel.LOW, boostEcc: false };
+		const full = new Uint8Array(17);
+
+		expect(QRCode.encodeBinary(full, options).version).toBe(1);
+		expect(QRCode.encodeBinary(full, { ...options, eci: ECI.ISO_8859_2 }).version).toBe(2);
+		expect(() => QRCode.encodeBinary(full, { ...options, eci: ECI.ISO_8859_2, maxVersion: 1 })).toThrow(RangeError);
+	});
+
+	test("changes the symbol only when it is given", () => {
+		const data = new TextEncoder().encode("Račun 052/26");
+		const plain = QRCode.encodeBinary(data, { mask: 0 });
+		const labelled = QRCode.encodeBinary(data, { mask: 0, eci: ECI.UTF_8 });
+
+		expect(fingerprint(labelled)).not.toBe(fingerprint(plain));
+		expect(fingerprint(QRCode.encodeBinary(data, { mask: 0 }))).toBe(fingerprint(plain));
+		expect(toSVG("Račun", { eci: ECI.UTF_8 })).not.toBe(toSVG("Račun"));
+	});
+
+	test("keeps a UPN QR at version 15 and level M with the header", () => {
+		const qr = QRCode.encodeBinary(new Uint8Array(300), {
+			minVersion: 15,
+			maxVersion: 15,
+			errorCorrectionLevel: ErrorCorrectionLevel.MEDIUM,
+			boostEcc: false,
+			eci: ECI.ISO_8859_2,
+		});
+		expect(qr.version).toBe(15);
+		expect(qr.errorCorrectionLevel).toBe(ErrorCorrectionLevel.MEDIUM);
+	});
+
+	test("refuses a designator the header cannot carry", () => {
+		for (const eci of [-1, 1.5, 1000000, Number.NaN]) {
+			expect(() => QRCode.encode("HELLO", { eci })).toThrow("eci must be an integer between 0 and 999999.");
+		}
+	});
+});
 
 describe("rendering", () => {
 	test("SVG is well formed and sized", () => {

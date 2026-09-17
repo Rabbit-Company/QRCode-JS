@@ -45,7 +45,7 @@ import {
 	rawDataModules,
 } from "./constants.ts";
 import { encode as reedSolomon } from "./reed-solomon.ts";
-import { BitBuffer, byteSegment, makeSegments, totalBitLength, writeSegment, type Segment } from "./segment.ts";
+import { BitBuffer, byteSegment, checkEci, eciBitLength, makeSegments, totalBitLength, writeEci, writeSegment, type Segment } from "./segment.ts";
 import { ErrorCorrectionLevel, type FrameOptions, type LogoOptions, type QRCodeOptions, type SVGOptions, type TextOptions } from "./types.ts";
 
 /** Codewords alternated as padding once the data ends. */
@@ -151,8 +151,8 @@ export class QRCode {
 	 * @returns The encoded symbol, ready to render.
 	 * @throws {RangeError} when the text does not fit in `options.maxVersion` at
 	 * the requested level, when `minVersion` exceeds `maxVersion`, when either
-	 * falls outside 1 to 40 or is not an integer, or when `mask` is outside -1
-	 * to 7.
+	 * falls outside 1 to 40 or is not an integer, when `mask` is outside -1
+	 * to 7, or when `eci` is not an integer from 0 to 999999.
 	 *
 	 * @example Default settings
 	 * ```typescript
@@ -184,11 +184,17 @@ export class QRCode {
 	 * @param options - Same options as {@link QRCode.encode}.
 	 * @returns The encoded symbol, ready to render.
 	 * @throws {RangeError} when the data does not fit in `options.maxVersion` at
-	 * the requested level, or when the version range or mask is out of bounds.
+	 * the requested level, or when the version range, mask or ECI is out of
+	 * bounds.
 	 *
 	 * @example
 	 * ```typescript
 	 * const qr = QRCode.encodeBinary(new Uint8Array([1, 2, 3, 4]));
+	 * ```
+	 *
+	 * @example Text in another character set, labelled so readers decode it
+	 * ```typescript
+	 * const qr = QRCode.encodeBinary(latin2("Račun 052/26"), { eci: ECI.ISO_8859_2 });
 	 * ```
 	 */
 	static encodeBinary(data: Uint8Array, options: QRCodeOptions = {}): QRCode {
@@ -202,10 +208,10 @@ export class QRCode {
 	 *
 	 * @param segmentsFor - Produces the segments for a candidate version, which
 	 * matters because the character count field widens at versions 10 and 27.
-	 * @param options - Version range, requested level, mask and boost flag.
+	 * @param options - Version range, requested level, mask, boost flag and ECI.
 	 * @returns The finished symbol.
-	 * @throws {RangeError} when the segments do not fit in `maxVersion`, or when
-	 * the version range or mask is out of bounds.
+	 * @throws {RangeError} when the segments and any ECI header do not fit in
+	 * `maxVersion`, or when the version range, mask or ECI is out of bounds.
 	 */
 	private static fromSegments(segmentsFor: (version: number) => Segment[], options: QRCodeOptions): QRCode {
 		const requested = options.errorCorrectionLevel ?? ErrorCorrectionLevel.MEDIUM;
@@ -213,9 +219,12 @@ export class QRCode {
 		const maxVersion = clampVersion(options.maxVersion ?? MAX_VERSION, "maxVersion");
 		const mask = options.mask ?? -1;
 		const boost = options.boostEcc ?? true;
+		const eci = options.eci;
 
 		if (minVersion > maxVersion) throw new RangeError("minVersion cannot be greater than maxVersion.");
 		if (mask < -1 || mask > 7) throw new RangeError("mask must be between 0 and 7, or -1 to choose automatically.");
+		if (eci !== undefined) checkEci(eci);
+		const headerBits = eci === undefined ? 0 : eciBitLength(eci);
 
 		let version = minVersion;
 		let segments: Segment[] = [];
@@ -225,7 +234,7 @@ export class QRCode {
 				throw new RangeError(`Data is too long: it does not fit in a version ${maxVersion} symbol at error correction level ${requested}.`);
 			}
 			segments = segmentsFor(version);
-			usedBits = totalBitLength(segments, version);
+			usedBits = headerBits + totalBitLength(segments, version);
 			if (usedBits <= dataCodewords(version, requested) * 8) break;
 		}
 
@@ -238,7 +247,7 @@ export class QRCode {
 			}
 		}
 
-		return new QRCode(version, level, buildCodewords(segments, version, level), mask);
+		return new QRCode(version, level, buildCodewords(segments, version, level, eci), mask);
 	}
 
 	/**
@@ -932,14 +941,16 @@ export class QRCode {
 /**
  * Turns the segments into the final interleaved codeword sequence.
  *
+ * An ECI header, when given, is written first so it applies to every segment.
  * Data is padded to capacity, split into blocks, given Reed-Solomon parity,
  * then interleaved so that damage to one region of the symbol is spread across
  * every block rather than destroying one entirely.
  */
-function buildCodewords(segments: Segment[], version: number, level: ErrorCorrectionLevel): Uint8Array {
+function buildCodewords(segments: Segment[], version: number, level: ErrorCorrectionLevel, eci?: number): Uint8Array {
 	const capacityBits = dataCodewords(version, level) * 8;
 
 	const bits = new BitBuffer();
+	if (eci !== undefined) writeEci(eci, bits);
 	for (const segment of segments) writeSegment(segment, version, bits);
 
 	// Terminator: up to four zero bits, truncated if capacity is nearly full.
@@ -1189,6 +1200,6 @@ export function toText(text: string, options: QRCodeOptions & TextOptions = {}):
 	return QRCode.encode(text, options).toString(options);
 }
 
-export { ErrorCorrectionLevel, Mode } from "./types.ts";
+export { ECI, ErrorCorrectionLevel, Mode } from "./types.ts";
 export type { FrameOptions, LogoOptions, QRCodeOptions, SVGOptions, TextOptions } from "./types.ts";
 export { MAX_VERSION, MIN_VERSION } from "./constants.ts";

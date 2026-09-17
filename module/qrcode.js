@@ -12,6 +12,12 @@ var Mode;
   Mode["ALPHANUMERIC"] = "alphanumeric";
   Mode["BYTE"] = "byte";
 })(Mode ||= {});
+var ECI;
+((ECI) => {
+  ECI[ECI["ISO_8859_1"] = 3] = "ISO_8859_1";
+  ECI[ECI["ISO_8859_2"] = 4] = "ISO_8859_2";
+  ECI[ECI["UTF_8"] = 26] = "UTF_8";
+})(ECI ||= {});
 
 // src/constants.ts
 var MIN_VERSION = 1;
@@ -48,6 +54,8 @@ var MODE_BITS = {
   alphanumeric: 2,
   byte: 4
 };
+var ECI_MODE_BITS = 7;
+var MAX_ECI = 999999;
 var ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
 function rawDataModules(version) {
   let result = (16 * version + 128) * version + 64;
@@ -200,6 +208,30 @@ function writeSegment(segment, version, out) {
   out.push(segment.length, CHAR_COUNT_BITS[segment.mode][versionGroup(version)]);
   out.append(segment.bits);
 }
+function checkEci(designator) {
+  if (!Number.isInteger(designator) || designator < 0 || designator > MAX_ECI) {
+    throw new RangeError(`eci must be an integer between 0 and ${MAX_ECI}.`);
+  }
+}
+function eciBitLength(designator) {
+  if (designator < 128)
+    return 4 + 8;
+  if (designator < 16384)
+    return 4 + 16;
+  return 4 + 24;
+}
+function writeEci(designator, out) {
+  out.push(ECI_MODE_BITS, 4);
+  if (designator < 128) {
+    out.push(designator, 8);
+  } else if (designator < 16384) {
+    out.push(2, 2);
+    out.push(designator, 14);
+  } else {
+    out.push(6, 3);
+    out.push(designator, 21);
+  }
+}
 var MODE_ORDER = ["byte" /* BYTE */, "alphanumeric" /* ALPHANUMERIC */, "numeric" /* NUMERIC */];
 var SIXTHS = 6;
 function utf8Length(codePoint) {
@@ -325,10 +357,14 @@ class QRCode {
     const maxVersion = clampVersion(options.maxVersion ?? MAX_VERSION, "maxVersion");
     const mask = options.mask ?? -1;
     const boost = options.boostEcc ?? true;
+    const eci = options.eci;
     if (minVersion > maxVersion)
       throw new RangeError("minVersion cannot be greater than maxVersion.");
     if (mask < -1 || mask > 7)
       throw new RangeError("mask must be between 0 and 7, or -1 to choose automatically.");
+    if (eci !== undefined)
+      checkEci(eci);
+    const headerBits = eci === undefined ? 0 : eciBitLength(eci);
     let version = minVersion;
     let segments = [];
     let usedBits = 0;
@@ -337,7 +373,7 @@ class QRCode {
         throw new RangeError(`Data is too long: it does not fit in a version ${maxVersion} symbol at error correction level ${requested}.`);
       }
       segments = segmentsFor(version);
-      usedBits = totalBitLength(segments, version);
+      usedBits = headerBits + totalBitLength(segments, version);
       if (usedBits <= dataCodewords(version, requested) * 8)
         break;
     }
@@ -349,7 +385,7 @@ class QRCode {
         }
       }
     }
-    return new QRCode(version, level, buildCodewords(segments, version, level), mask);
+    return new QRCode(version, level, buildCodewords(segments, version, level, eci), mask);
   }
   getModule(x, y) {
     if (x < 0 || y < 0 || x >= this.size || y >= this.size)
@@ -731,9 +767,11 @@ class QRCode {
 `);
   }
 }
-function buildCodewords(segments, version, level) {
+function buildCodewords(segments, version, level, eci) {
   const capacityBits = dataCodewords(version, level) * 8;
   const bits = new BitBuffer;
+  if (eci !== undefined)
+    writeEci(eci, bits);
   for (const segment of segments)
     writeSegment(segment, version, bits);
   bits.push(0, Math.min(4, capacityBits - bits.length));
@@ -835,6 +873,7 @@ function toText(text, options = {}) {
   return QRCode.encode(text, options).toString(options);
 }
 export {
+  ECI,
   ErrorCorrectionLevel,
   MAX_VERSION,
   MIN_VERSION,
